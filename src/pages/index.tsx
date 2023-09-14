@@ -1,7 +1,10 @@
-import { Button, DatePicker, Drawer, Form, Select, Spin } from 'antd';
+import { DatePicker, Form, Select, Spin } from 'antd';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+
+import { DrawerModal } from '@/components/report/modal';
+import { ReportFile } from '@/components/report/report-file';
 
 // import * as demooo from '@/utils/jsreportService';
 
@@ -74,12 +77,12 @@ interface Report {
 
 const Gallery = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  flex-direction: 'row';
 `;
 
 const ReportCard = styled.div`
   border: 1px solid #ccc;
+  border-radius: 12px;
   padding: 16px;
   margin: 16px;
   width: calc(33.33% - 32px);
@@ -93,6 +96,8 @@ const ReportCard = styled.div`
 `;
 
 const HomePage: React.FC = () => {
+  const [isModalOpen, setModalOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -128,15 +133,17 @@ const HomePage: React.FC = () => {
   }, []);
 
   const openDrawer = (report: Report) => {
+    setModalOpen(true);
     setSelectedReport(report);
   };
 
   const closeDrawer = () => {
+    setModalOpen(false);
     setSelectedReport(null);
     form.resetFields();
   };
 
-  const onFinish = async (values: any) => {
+  const handleFinish = async (values: unknown) => {
     setLoading(true);
     try {
       const { dateRange, stations, parameters } = values;
@@ -182,64 +189,54 @@ const HomePage: React.FC = () => {
     <Gallery>
       {reports.map((report) => (
         <ReportCard key={report.id} onClick={() => openDrawer(report)}>
-          <h2>{report.name}</h2>
-          <p>ID: {report.id}</p>
+          <ReportFile name={report.name} />
         </ReportCard>
       ))}
-
       {selectedReport && (
-        <Drawer
-          title={`Report: ${selectedReport.name}`}
-          width={400}
+        <DrawerModal
+          visible={isModalOpen}
+          title={selectedReport.name}
           onClose={closeDrawer}
-          visible={!!selectedReport}
+          form={form}
+          onFinish={handleFinish}
         >
-          <Form form={form} onFinish={onFinish}>
-            <Form.Item
-              name="stations"
-              label="Stations"
-              rules={[{ required: true, message: 'Please select stations' }]}
-            >
-              <Select mode="multiple" placeholder="Select stations">
-                {stationsOptions.map((station) => (
-                  <Option key={station} value={station}>
-                    {station}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
+          <Form.Item
+            name="stations"
+            label="Stations"
+            rules={[{ required: true, message: 'Please select stations' }]}
+          >
+            <Select mode="multiple" placeholder="Select stations">
+              {stationsOptions.map((station) => (
+                <Option key={station} value={station}>
+                  {station}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-            <Form.Item
-              name="dateRange"
-              label="Date Range"
-              rules={[{ required: true, message: 'Please select date range' }]}
-            >
-              <RangePicker />
-            </Form.Item>
+          <Form.Item
+            name="dateRange"
+            label="Date Range"
+            rules={[{ required: true, message: 'Please select date range' }]}
+          >
+            <RangePicker />
+          </Form.Item>
 
-            <Form.Item
-              name="parameters"
-              label="Parameters"
-              rules={[{ required: true, message: 'Please select parameters' }]}
-            >
-              <Select mode="multiple" placeholder="Select parameters">
-                {parametersOptions.map((parameter) => (
-                  <Option key={parameter} value={parameter}>
-                    {parameter}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item>
-              <Spin spinning={loading} tip="Loading...">
-                <Button type="primary" htmlType="submit">
-                  Submit
-                </Button>
-              </Spin>
-            </Form.Item>
-          </Form>
-        </Drawer>
+          <Form.Item
+            name="parameters"
+            label="Parameters"
+            rules={[{ required: true, message: 'Please select parameters' }]}
+          >
+            <Select mode="multiple" placeholder="Select parameters">
+              {parametersOptions.map((parameter) => (
+                <Option key={parameter} value={parameter}>
+                  {parameter}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Spin spinning={loading} tip="Loading..." />
+        </DrawerModal>
       )}
     </Gallery>
   );
